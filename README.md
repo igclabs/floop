@@ -1,13 +1,13 @@
 # Floop
 
-A lightweight feedback widget for Laravel apps. Zero dependencies, no database — feedback is stored as markdown files that AI coding agents can read and action.
+A lightweight feedback widget for Laravel apps. Zero dependencies, no database, feedback is stored as markdown files that AI coding agents can read and action.
 
-## The Loop
+## The Feedback Loop
 
 1. **Install Floop** into your Laravel app
 2. **Add the Claude Code skill** so your agent knows how to process feedback
 3. **Testers submit feedback** via the widget while browsing the app
-4. **Ask your agent** to "work through feedback" — it reads each file, understands the request, locates the code using the captured context, makes the change, and marks it as actioned
+4. **Ask your agent** to "work through feedback" it reads each file, understands the request, locates the code using the captured context, makes the change, and marks it as actioned
 
 Feedback in. Fixes out. That's the floop.
 
@@ -130,4 +130,4 @@ Key options in `config/floop.php`:
 
 ## License
 
-MIT - IGC Labs
+MIT - IGC Enterprises Ltd
