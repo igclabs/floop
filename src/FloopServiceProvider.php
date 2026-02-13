@@ -26,6 +26,9 @@ class FloopServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $router = $this->app->make(\Illuminate\Routing\Router::class);
+        $router->pushMiddlewareToGroup('web', \IgcLabs\Floop\Http\Middleware\InjectFloopContext::class);
+
         $this->loadRoutesFrom(__DIR__.'/../routes/floop.php');
 
         $this->loadViewsFrom(__DIR__.'/Views', 'floop');

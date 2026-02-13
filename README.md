@@ -25,41 +25,41 @@ Add the path repository to your `composer.json`:
 composer require igclabs/floop:@dev
 ```
 
-The service provider is auto-discovered.
+That's it. The service provider is auto-discovered, the middleware registers itself, and the widget is automatically injected into HTML responses. Browse any page and you'll see the feedback button.
 
 ## Setup
 
-**1. Register the middleware** in `bootstrap/app.php`:
-
-```php
-$middleware->appendToGroup('web', \IgcLabs\Floop\Http\Middleware\InjectFloopContext::class);
-```
-
-**2. Add the widget** to your Blade layout (before `</body>`):
-
-```blade
-@floop
-```
-
-**3. Install the Claude Code skill:**
+**Install the Claude Code skill:**
 
 ```bash
 php artisan floop:install-skill
 ```
 
-Or via `vendor:publish`:
-
-```bash
-php artisan vendor:publish --tag=floop-skill
-```
-
 Now when you ask Claude Code to "work through feedback" or "process feedback", it knows exactly what to do.
 
-**4. Publish config** (optional):
+**Publish config** (optional):
 
 ```bash
 php artisan vendor:publish --tag=floop-config
 ```
+
+## Customisation
+
+By default, Floop auto-injects the widget before `</body>` on every HTML response. If you want manual control over placement:
+
+**1.** Disable auto-injection in `config/floop.php`:
+
+```php
+'auto_inject' => false,
+```
+
+**2.** Add `@floop` to your Blade layout (before `</body>`):
+
+```blade
+@floop
+```
+
+The middleware is registered automatically. If you need to control middleware order, you can disable auto-registration by removing the package's service provider from auto-discovery and registering things manually.
 
 ## How It Works
 
@@ -109,6 +109,7 @@ Key options in `config/floop.php`:
 
 | Key | Default | Description |
 |-----|---------|-------------|
+| `auto_inject` | `true` | Auto-inject widget into HTML responses (set `false` to use `@floop` manually) |
 | `storage_path` | `storage_path('app/feedback')` | Where `.md` files are stored |
 | `route_prefix` | `_feedback` | URL prefix for the widget API |
 | `environments` | `['local']` | Environments where the widget renders (`['*']` for all) |

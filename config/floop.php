@@ -2,6 +2,8 @@
 
 return [
 
+    'auto_inject' => true,
+
     'storage_path' => storage_path('app/feedback'),
 
     'route_prefix' => '_feedback',

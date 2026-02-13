@@ -10,16 +10,25 @@ abstract class TestCase extends BaseTestCase
 {
     protected string $tempStoragePath;
 
+    protected FloopManager $manager;
+
     protected function getPackageProviders($app): array
     {
         return [FloopServiceProvider::class];
     }
 
+    protected function defineEnvironment($app): void
+    {
+        $app['config']->set('floop.storage_path', $this->tempStoragePath);
+    }
+
     protected function setUp(): void
     {
+        $this->tempStoragePath = sys_get_temp_dir().'/floop_test_'.uniqid();
+
         parent::setUp();
 
-        $this->tempStoragePath = sys_get_temp_dir().'/floop_test_'.uniqid();
+        $this->manager = app(FloopManager::class);
     }
 
     protected function tearDown(): void
@@ -27,11 +36,6 @@ abstract class TestCase extends BaseTestCase
         $this->deleteDirectory($this->tempStoragePath);
 
         parent::tearDown();
-    }
-
-    protected function makeManager(): FloopManager
-    {
-        return new FloopManager($this->tempStoragePath);
     }
 
     private function deleteDirectory(string $path): void

@@ -3,6 +3,7 @@
 namespace IgcLabs\Floop\Http\Middleware;
 
 use Closure;
+use IgcLabs\Floop\FloopManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
@@ -45,6 +46,43 @@ class InjectFloopContext
             }
         });
 
-        return $next($request);
+        $response = $next($request);
+
+        if ($this->shouldInjectWidget($response)) {
+            $widget = view('floop::widget')->render();
+            $body = $response->getContent();
+            $response->setContent(str_replace('</body>', $widget.'</body>', $body));
+        }
+
+        return $response;
+    }
+
+    protected function shouldInjectWidget(Response $response): bool
+    {
+        if (! config('floop.auto_inject', true)) {
+            return false;
+        }
+
+        $contentType = $response->headers->get('Content-Type', '');
+        if (! str_contains($contentType, 'text/html')) {
+            return false;
+        }
+
+        $environments = config('floop.environments', ['local']);
+        $envAllowed = in_array('*', $environments) || app()->environment($environments);
+        if (! $envAllowed) {
+            return false;
+        }
+
+        if (! app(FloopManager::class)->isEnabled()) {
+            return false;
+        }
+
+        $content = $response->getContent();
+        if (str_contains($content, 'id="floop-widget"')) {
+            return false;
+        }
+
+        return true;
     }
 }
