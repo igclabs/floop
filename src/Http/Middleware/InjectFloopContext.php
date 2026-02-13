@@ -52,6 +52,7 @@ class InjectFloopContext
             $widget = view('floop::widget')->render();
             $body = $response->getContent();
             $response->setContent(str_replace('</body>', $widget.'</body>', $body));
+            $response->headers->remove('Content-Length');
         }
 
         return $response;
