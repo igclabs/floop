@@ -1,5 +1,5 @@
 ---
-name: feedback-loop
+name: floop
 description: Processes feedback files from the feedback widget. Use when asked to "work through feedback", "process feedback", "check feedback", or when pointed at .md files in storage/app/feedback/pending/. Reads each file, understands what's being asked, makes the change, then marks it as actioned.
 ---
 

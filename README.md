@@ -9,19 +9,13 @@ A lightweight feedback widget for Laravel apps. Zero dependencies, no database, 
 1. **Install Floop** into your Laravel app
 2. **Add the Claude Code skill** so your agent knows how to process feedback
 3. **Testers submit feedback** via the widget while browsing the app
-4. **Ask your agent** to "work through feedback" it reads each file, understands the request, locates the code using the captured context, makes the change, and marks it as actioned
+4. **Ask your agent** to "work through feedback" and watch as it reads each file, understands the request, locates the code using the captured context, makes the change, and marks it as actioned
 
 Feedback in. Fixes out. That's the floop.
 
 ## Installation
 
 Add the path repository to your `composer.json`:
-
-```json
-"repositories": [
-    { "type": "path", "url": "packages/igclabs/floop" }
-]
-```
 
 ```bash
 composer require igclabs/floop:@dev
@@ -61,7 +55,7 @@ By default, Floop auto-injects the widget before `</body>` on every HTML respons
 @floop
 ```
 
-The middleware is registered automatically. If you need to control middleware order, you can disable auto-registration by removing the package's service provider from auto-discovery and registering things manually.
+The middleware is registered automatically on the global stack. No manual middleware registration is needed.
 
 ## How It Works
 
