@@ -1,5 +1,7 @@
 # Floop
 
+![Floop Logo](https://www.intelligentgraphicandcode.com/storage/img/floop-banner_X8zxXW.jpg)
+
 A lightweight feedback widget for Laravel apps. Zero dependencies, no database, feedback is stored as markdown files that AI coding agents can read and action.
 
 ## The Feedback Loop
