@@ -6,6 +6,7 @@ use IgcLabs\Floop\Console\Commands\FloopActionCommand;
 use IgcLabs\Floop\Console\Commands\FloopClearCommand;
 use IgcLabs\Floop\Console\Commands\FloopDisableCommand;
 use IgcLabs\Floop\Console\Commands\FloopEnableCommand;
+use IgcLabs\Floop\Console\Commands\FloopInstallSkillCommand;
 use IgcLabs\Floop\Console\Commands\FloopListCommand;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -33,6 +34,10 @@ class FloopServiceProvider extends ServiceProvider
             __DIR__.'/../config/floop.php' => config_path('floop.php'),
         ], 'floop-config');
 
+        $this->publishes([
+            __DIR__.'/../SKILL.md' => base_path('.claude/skills/floop/SKILL.md'),
+        ], 'floop-skill');
+
         Blade::directive('floop', function () {
             return "<?php echo view('floop::widget')->render(); ?>";
         });
@@ -44,6 +49,7 @@ class FloopServiceProvider extends ServiceProvider
                 FloopClearCommand::class,
                 FloopEnableCommand::class,
                 FloopDisableCommand::class,
+                FloopInstallSkillCommand::class,
             ]);
         }
     }

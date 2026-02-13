@@ -41,11 +41,16 @@ $middleware->appendToGroup('web', \IgcLabs\Floop\Http\Middleware\InjectFloopCont
 @floop
 ```
 
-**3. Install the Claude Code skill** — copy `SKILL.md` from this package into your project:
+**3. Install the Claude Code skill:**
 
 ```bash
-mkdir -p .claude/skills/floop
-cp packages/igclabs/floop/SKILL.md .claude/skills/floop/SKILL.md
+php artisan floop:install-skill
+```
+
+Or via `vendor:publish`:
+
+```bash
+php artisan vendor:publish --tag=floop-skill
 ```
 
 Now when you ask Claude Code to "work through feedback" or "process feedback", it knows exactly what to do.
