@@ -30,6 +30,7 @@ git commit -m "$COMMIT_MESSAGE"
 git tag "v$NEW_VERSION"
 
 # Push the changes and tags
+git push origin
 git push origin --tags
 
 # Confirmation message
