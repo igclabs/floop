@@ -63,8 +63,7 @@ class InjectFloopContext
             return false;
         }
 
-        $contentType = $response->headers->get('Content-Type', '');
-        if (! str_contains($contentType, 'text/html')) {
+        if ($response->isRedirection() || $response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse) {
             return false;
         }
 
@@ -79,6 +78,11 @@ class InjectFloopContext
         }
 
         $content = $response->getContent();
+
+        if (! str_contains($content, '</body>')) {
+            return false;
+        }
+
         if (str_contains($content, 'id="floop-widget"')) {
             return false;
         }
