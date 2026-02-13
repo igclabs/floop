@@ -65,7 +65,11 @@ The middleware is registered automatically on the global stack. No manual middle
 - A "floop" sound plays on successful submission
 - The widget captures page context automatically: URL, route, controller, Blade views, viewport size
 
-Each feedback file contains everything an AI agent needs to locate and fix the issue — the exact controller method, Blade view hierarchy, route parameters, and the user's message describing what they noticed.
+Each feedback file contains everything an AI agent needs to locate and fix the issue: the exact controller method, Blade view hierarchy, route parameters, and the user's message describing what they noticed.
+
+### Tip
+
+Use Floop while your agent is busy working, take the time to look around the app and queue up feedback and small fix jobs while it's busy and then complete them in batches or run it continously in a dedicated terminal and watch as your app fixes itself as you browse and send feedback! 
 
 ### File Storage
 
@@ -116,11 +120,11 @@ Key options in `config/floop.php`:
 
 ## Keyboard Shortcuts
 
-- **Ctrl+Shift+F** — toggle the feedback panel open/closed
-- **Ctrl+Shift+H** — hide/show the entire widget
-- **Enter** — submit feedback (when typing in the textarea)
-- **Shift+Enter** — new line in the textarea
-- **Escape** — close the panel
+- **Ctrl+Shift+F** = toggle the feedback panel open/closed
+- **Ctrl+Shift+H** = hide/show the entire widget
+- **Enter** = submit feedback (when typing in the textarea)
+- **Shift+Enter** = new line in the textarea
+- **Escape** = close the panel
 
 ## Design
 
