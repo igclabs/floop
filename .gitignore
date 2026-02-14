@@ -1,3 +1,6 @@
 /vendor
 composer.lock
 .phpunit.result.cache
+version.txt
+update_version.sh
+MARKETING.md
