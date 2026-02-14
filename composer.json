@@ -1,6 +1,6 @@
 {
     "name": "igclabs/floop",
-    "description": "A lightweight floating feedback widget for Laravel apps. Stores feedback as markdown files — no database required.",
+    "description": "An autonomous feedback loop for Laravel. Testers submit feedback, AI agents fix the code. No database, no tickets, no waiting.",
     "type": "library",
     "license": "MIT",
     "require": {
