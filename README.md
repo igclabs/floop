@@ -1,6 +1,6 @@
 # Floop
 
-![Floop Logo](https://www.intelligentgraphicandcode.com/storage/img/floop-banner_X8zxXW.jpg)
+![Floop Logo](https://www.intelligentgraphicandcode.com/storage/img/floop-banner-2_Zg0mq3.jpg)
 
 An autonomous feedback loop for Laravel apps. Testers describe what they want. AI agents make it happen.
 
@@ -9,8 +9,8 @@ An autonomous feedback loop for Laravel apps. Testers describe what they want. A
 ## The Loop
 
 1. **Tester notices something** while browsing the app and hits the floop button
-2. **Floop captures the intent + full page context** — URL, route, controller, Blade views, viewport — and writes a structured work order as a markdown file
-3. **Ask your AI agent** to "work through feedback" — it reads each work order, locates the exact code using the captured context, makes the change, and closes the loop
+2. **Floop captures the intent + full page context** (URL, route, controller, Blade views, viewport) and writes a structured work order as a markdown file
+3. **Ask your AI agent** to "work through feedback" and it reads each work order, locates the exact code using the captured context, makes the change, and closes the loop
 4. **Tester verifies the fix** next time they browse past
 
 The widget is the sensor. The markdown file is the signal. The AI agent is the actuator. The tester closes the loop.
@@ -39,7 +39,7 @@ Now when you ask Claude Code to "work through feedback" or "process feedback", i
 - The work order captures everything an agent needs: the exact controller method, Blade view hierarchy, route parameters, viewport size, and the user's message
 - A "floop" sound confirms the submission
 
-When the agent processes a work order, it moves from `pending/` to `actioned/` — the loop is closed.
+When the agent processes a work order, it moves from `pending/` to `actioned/`. The loop is closed.
 
 ```
 storage/app/feedback/
@@ -49,7 +49,7 @@ storage/app/feedback/
 
 ### Tip
 
-Use Floop while your agent is busy working. Browse the app, queue up work orders, then process them in batches — or run it continuously in a dedicated terminal and watch as your app fixes itself while you browse.
+Use Floop while your agent is busy working. Browse the app, queue up work orders, then process them in batches. Or run it continuously in a dedicated terminal and watch as your app fixes itself while you browse.
 
 ## Why "Floop"?
 
