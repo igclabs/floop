@@ -5,3 +5,4 @@ version.txt
 update_version.sh
 MARKETING.md
 CLAUDE.md
+*.profusion
