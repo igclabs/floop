@@ -288,6 +288,54 @@ class FloopManagerTest extends TestCase
         $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$pngFilename);
     }
 
+    // ── console errors & network failures ───────────────
+
+    public function test_store_includes_console_errors_in_markdown(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Page is broken',
+            'type' => 'bug',
+            'console_errors' => [
+                ['message' => "TypeError: Cannot read property 'foo'", 'timestamp' => '14:30:22'],
+                ['message' => 'Unhandled Promise Rejection: fetch failed', 'timestamp' => '14:30:25'],
+            ],
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringContainsString('## Console Errors', $content);
+        $this->assertStringContainsString("[14:30:22] TypeError: Cannot read property 'foo'", $content);
+        $this->assertStringContainsString('[14:30:25] Unhandled Promise Rejection: fetch failed', $content);
+    }
+
+    public function test_store_includes_network_failures_in_markdown(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'API calls failing',
+            'type' => 'bug',
+            'network_failures' => [
+                ['url' => '/api/users', 'method' => 'GET', 'status' => 500, 'statusText' => 'Internal Server Error', 'timestamp' => '14:30:15'],
+            ],
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringContainsString('## Network Failures', $content);
+        $this->assertStringContainsString('/api/users', $content);
+        $this->assertStringContainsString('500', $content);
+        $this->assertStringContainsString('Internal Server Error', $content);
+    }
+
+    public function test_store_without_errors_omits_error_sections(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Just a comment',
+            'type' => 'feedback',
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringNotContainsString('## Console Errors', $content);
+        $this->assertStringNotContainsString('## Network Failures', $content);
+    }
+
     public function test_store_without_screenshot_creates_no_png(): void
     {
         $filename = $this->manager->store([

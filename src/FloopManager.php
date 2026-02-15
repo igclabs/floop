@@ -99,7 +99,7 @@ class FloopManager
     /**
      * Store a new work order as a markdown file in the pending directory.
      *
-     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string, screenshot?: string}  $data
+     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string, screenshot?: string, console_errors?: array, network_failures?: array}  $data
      * @return string The generated filename.
      */
     public function store(array $data): string
@@ -367,6 +367,30 @@ class FloopManager
             $md .= "\n### Blade Views\n\n";
             foreach ($data['views'] as $view) {
                 $md .= "- `{$view}`\n";
+            }
+        }
+
+        if (! empty($data['console_errors'])) {
+            $md .= "\n---\n\n## Console Errors\n\n```\n";
+            foreach ($data['console_errors'] as $error) {
+                $ts = $error['timestamp'] ?? '';
+                $msg = $error['message'] ?? '';
+                $md .= "[{$ts}] {$msg}\n";
+            }
+            $md .= "```\n";
+        }
+
+        if (! empty($data['network_failures'])) {
+            $md .= "\n---\n\n## Network Failures\n\n";
+            $md .= "| Time | Method | URL | Status |\n";
+            $md .= "|------|--------|-----|--------|\n";
+            foreach ($data['network_failures'] as $failure) {
+                $ts = $failure['timestamp'] ?? '';
+                $method = $failure['method'] ?? '';
+                $url = $failure['url'] ?? '';
+                $status = $failure['status'] ?? '';
+                $statusText = $failure['statusText'] ?? '';
+                $md .= "| {$ts} | {$method} | `{$url}` | {$status} {$statusText} |\n";
             }
         }
 

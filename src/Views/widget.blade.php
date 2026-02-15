@@ -172,7 +172,8 @@
         gap: 6px;
     }
 
-    #floop-widget .floop-screenshot-btn {
+    #floop-widget .floop-screenshot-btn,
+    #floop-widget .floop-diagnostics-btn {
         background: none;
         border: none;
         cursor: pointer;
@@ -183,7 +184,12 @@
         transition: color 0.12s ease;
     }
 
-    #floop-widget .floop-screenshot-btn:hover {
+    #floop-widget .floop-screenshot-btn:hover,
+    #floop-widget .floop-diagnostics-btn:hover {
+        color: var(--floop-primary);
+    }
+
+    #floop-widget .floop-diagnostics-btn.floop-attached {
         color: var(--floop-primary);
     }
 
@@ -313,6 +319,36 @@
         justify-content: center;
     }
 
+    #floop-widget .floop-diagnostics-preview {
+        position: relative;
+        margin-bottom: 10px;
+        padding: 8px 28px 8px 8px;
+        background: var(--floop-bg-secondary);
+        border: 1px solid var(--floop-border);
+        border-radius: 6px;
+        font-size: 11px;
+        color: var(--floop-text-secondary);
+        display: none;
+    }
+
+    #floop-widget .floop-diagnostics-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.4);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     #floop-widget .floop-success {
         display: none;
         padding: 30px 14px;
@@ -321,6 +357,132 @@
         color: var(--floop-text);
     }
 </style>
+
+<script>
+(function() {
+    'use strict';
+
+    var MAX_ITEMS = 5;
+    var MAX_MSG_LEN = 200;
+    var routePrefix = @json('/' . $routePrefix);
+
+    window.__floopErrors = [];
+    window.__floopNetworkFailures = [];
+
+    function truncate(str, len) {
+        str = String(str || '');
+        return str.length > len ? str.substring(0, len) + '...' : str;
+    }
+
+    function timestamp() {
+        var d = new Date();
+        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+    }
+
+    function hasErrorMessage(msg) {
+        for (var i = 0; i < window.__floopErrors.length; i++) {
+            if (window.__floopErrors[i].message === msg) return true;
+        }
+        return false;
+    }
+
+    function hasNetworkFailure(url, status) {
+        for (var i = 0; i < window.__floopNetworkFailures.length; i++) {
+            var f = window.__floopNetworkFailures[i];
+            if (f.url === url && f.status === status) return true;
+        }
+        return false;
+    }
+
+    function pushError(msg) {
+        msg = truncate(msg, MAX_MSG_LEN);
+        if (hasErrorMessage(msg) || window.__floopErrors.length >= MAX_ITEMS) return;
+        window.__floopErrors.push({ message: msg, timestamp: timestamp() });
+    }
+
+    function pushNetworkFailure(entry) {
+        if (hasNetworkFailure(entry.url, entry.status) || window.__floopNetworkFailures.length >= MAX_ITEMS) return;
+        window.__floopNetworkFailures.push(entry);
+    }
+
+    // Wrap console.error
+    var origConsoleError = console.error;
+    console.error = function() {
+        var msg = Array.prototype.slice.call(arguments).join(' ');
+        pushError(msg);
+        return origConsoleError.apply(console, arguments);
+    };
+
+    // Global error listener
+    window.addEventListener('error', function(e) {
+        pushError(e.message || 'Unknown error');
+    });
+
+    // Unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(e) {
+        var msg = (e.reason && (e.reason.message || String(e.reason))) || 'Unhandled rejection';
+        pushError(msg);
+    });
+
+    // Wrap fetch for network failures
+    if (window.fetch) {
+        var origFetch = window.fetch;
+        window.fetch = function() {
+            var url = arguments[0];
+            var opts = arguments[1] || {};
+            if (typeof url === 'object' && url.url) url = url.url;
+            url = String(url);
+
+            if (url.indexOf(routePrefix) !== -1) {
+                return origFetch.apply(this, arguments);
+            }
+
+            var method = (opts.method || 'GET').toUpperCase();
+
+            return origFetch.apply(this, arguments).then(function(response) {
+                if (response.status >= 400) {
+                    pushNetworkFailure({
+                        url: truncate(url, MAX_MSG_LEN),
+                        method: method,
+                        status: response.status,
+                        statusText: truncate(response.statusText, 50),
+                        timestamp: timestamp()
+                    });
+                }
+                return response;
+            });
+        };
+    }
+
+    // Wrap XMLHttpRequest for network failures
+    var origXhrOpen = XMLHttpRequest.prototype.open;
+    var origXhrSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function(method, url) {
+        this._floopMethod = (method || 'GET').toUpperCase();
+        this._floopUrl = String(url);
+        return origXhrOpen.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function() {
+        var xhr = this;
+        if (xhr._floopUrl && xhr._floopUrl.indexOf(routePrefix) === -1) {
+            xhr.addEventListener('loadend', function() {
+                if (xhr.status >= 400) {
+                    pushNetworkFailure({
+                        url: truncate(xhr._floopUrl, MAX_MSG_LEN),
+                        method: xhr._floopMethod,
+                        status: xhr.status,
+                        statusText: truncate(xhr.statusText, 50),
+                        timestamp: timestamp()
+                    });
+                }
+            });
+        }
+        return origXhrSend.apply(this, arguments);
+    };
+})();
+</script>
 
 <div id="floop-widget">
     <button class="floop-trigger" type="button" title="Submit feedback ({{ $shortcut ? strtoupper(str_replace('+', ' + ', $shortcut)) : '' }})">
@@ -332,6 +494,7 @@
         <div class="floop-panel-header">
             <h3>Feedback</h3>
             <div class="floop-panel-header-actions">
+                <button class="floop-diagnostics-btn" type="button" title="Attach console errors &amp; network failures">&gt;_</button>
                 <button class="floop-screenshot-btn" type="button" title="Capture screenshot">&#x1F4F7;</button>
                 <button class="floop-close" type="button">&times;</button>
             </div>
@@ -355,6 +518,11 @@
                         @endif
                     </div>
                 </details>
+
+                <div class="floop-diagnostics-preview">
+                    <span class="floop-diagnostics-summary"></span>
+                    <button class="floop-diagnostics-remove" type="button">&times;</button>
+                </div>
 
                 <div class="floop-screenshot-preview">
                     <img src="" alt="Screenshot preview">
@@ -393,6 +561,11 @@
     var screenshotImg = screenshotPreview.querySelector('img');
     var screenshotRemove = widget.querySelector('.floop-screenshot-remove');
     var screenshotData = null;
+    var diagnosticsBtn = widget.querySelector('.floop-diagnostics-btn');
+    var diagnosticsPreview = widget.querySelector('.floop-diagnostics-preview');
+    var diagnosticsSummary = widget.querySelector('.floop-diagnostics-summary');
+    var diagnosticsRemove = widget.querySelector('.floop-diagnostics-remove');
+    var diagnosticsAttached = false;
 
     function getCsrf() {
         var meta = document.querySelector('meta[name="csrf-token"]');
@@ -462,6 +635,31 @@
     screenshotBtn.addEventListener('click', captureScreenshot);
     screenshotRemove.addEventListener('click', clearScreenshot);
 
+    function attachDiagnostics() {
+        var errorCount = (window.__floopErrors || []).length;
+        var failureCount = (window.__floopNetworkFailures || []).length;
+        if (errorCount === 0 && failureCount === 0) return;
+
+        diagnosticsAttached = true;
+        var parts = [];
+        if (errorCount) parts.push(errorCount + ' console error' + (errorCount > 1 ? 's' : ''));
+        if (failureCount) parts.push(failureCount + ' network failure' + (failureCount > 1 ? 's' : ''));
+        diagnosticsSummary.textContent = parts.join(', ');
+        diagnosticsPreview.style.display = 'block';
+        diagnosticsBtn.classList.add('floop-attached');
+    }
+
+    function clearDiagnostics() {
+        diagnosticsAttached = false;
+        diagnosticsPreview.style.display = 'none';
+        diagnosticsBtn.classList.remove('floop-attached');
+    }
+
+    diagnosticsBtn.addEventListener('click', function() {
+        diagnosticsAttached ? clearDiagnostics() : attachDiagnostics();
+    });
+    diagnosticsRemove.addEventListener('click', clearDiagnostics);
+
     function openPanel() {
         panel.classList.add('floop-open');
         formEl.style.display = '';
@@ -524,6 +722,15 @@
             body.screenshot = screenshotData;
         }
 
+        if (diagnosticsAttached) {
+            if (window.__floopErrors && window.__floopErrors.length) {
+                body.console_errors = window.__floopErrors;
+            }
+            if (window.__floopNetworkFailures && window.__floopNetworkFailures.length) {
+                body.network_failures = window.__floopNetworkFailures;
+            }
+        }
+
         fetch(prefix, {
             method: 'POST',
             headers: {
@@ -543,6 +750,9 @@
                 successEl.style.display = 'block';
                 messageEl.value = '';
                 clearScreenshot();
+                clearDiagnostics();
+                window.__floopErrors = [];
+                window.__floopNetworkFailures = [];
 
                 setTimeout(function() {
                     closePanel();

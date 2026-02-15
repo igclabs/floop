@@ -192,6 +192,45 @@ class FloopControllerTest extends TestCase
         $this->assertSame('fake-png-data', file_get_contents($pngFiles[0]));
     }
 
+    // ── Console errors & network failures ─────────────────
+
+    public function test_store_with_console_errors_includes_them_in_work_order(): void
+    {
+        $response = $this->postJson('/_feedback', [
+            'message' => 'Page is broken',
+            'type' => 'bug',
+            'console_errors' => [
+                ['message' => "TypeError: Cannot read property 'foo'", 'timestamp' => '14:30:22'],
+            ],
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $files = glob($this->tempStoragePath.'/pending/*.md');
+        $content = file_get_contents($files[0]);
+        $this->assertStringContainsString('## Console Errors', $content);
+        $this->assertStringContainsString("TypeError: Cannot read property 'foo'", $content);
+    }
+
+    public function test_store_with_network_failures_includes_them_in_work_order(): void
+    {
+        $response = $this->postJson('/_feedback', [
+            'message' => 'API calls failing',
+            'type' => 'bug',
+            'network_failures' => [
+                ['url' => '/api/users', 'method' => 'GET', 'status' => 500, 'statusText' => 'Internal Server Error', 'timestamp' => '14:30:15'],
+            ],
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $files = glob($this->tempStoragePath.'/pending/*.md');
+        $content = file_get_contents($files[0]);
+        $this->assertStringContainsString('## Network Failures', $content);
+        $this->assertStringContainsString('/api/users', $content);
+        $this->assertStringContainsString('500', $content);
+    }
+
     public function test_store_rejects_oversized_screenshot(): void
     {
         config()->set('floop.screenshot_max_size', 100);

@@ -25,6 +25,15 @@ class FloopController extends Controller
             'priority' => 'nullable|in:low,medium,high',
             'extra_context' => 'nullable|array',
             'screenshot' => 'nullable|string|max:'.config('floop.screenshot_max_size', 5242880),
+            'console_errors' => 'nullable|array|max:5',
+            'console_errors.*.message' => 'required|string|max:500',
+            'console_errors.*.timestamp' => 'nullable|string|max:20',
+            'network_failures' => 'nullable|array|max:5',
+            'network_failures.*.url' => 'required|string|max:2000',
+            'network_failures.*.method' => 'nullable|string|max:10',
+            'network_failures.*.status' => 'nullable|integer',
+            'network_failures.*.statusText' => 'nullable|string|max:200',
+            'network_failures.*.timestamp' => 'nullable|string|max:20',
         ]);
 
         $url = $request->header('X-Feedback-URL')
@@ -73,6 +82,14 @@ class FloopController extends Controller
 
         if (! empty($validated['screenshot'])) {
             $data['screenshot'] = $validated['screenshot'];
+        }
+
+        if (! empty($validated['console_errors'])) {
+            $data['console_errors'] = $validated['console_errors'];
+        }
+
+        if (! empty($validated['network_failures'])) {
+            $data['network_failures'] = $validated['network_failures'];
         }
 
         $filename = $this->manager->store($data);
