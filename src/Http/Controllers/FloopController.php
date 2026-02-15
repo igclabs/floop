@@ -7,10 +7,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
+/**
+ * Handles feedback submission and work order management via JSON API.
+ */
 class FloopController extends Controller
 {
     public function __construct(protected FloopManager $manager) {}
 
+    /**
+     * Validate and store a new work order from the widget.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -19,13 +25,6 @@ class FloopController extends Controller
             'priority' => 'nullable|in:low,medium,high',
             'extra_context' => 'nullable|array',
         ]);
-
-        $typeLabels = [
-            'feedback' => 'Feedback',
-            'task' => 'Task',
-            'idea' => 'Idea',
-            'bug' => 'Bug',
-        ];
 
         $url = $request->header('X-Feedback-URL')
             ?? $request->header('Referer')
@@ -41,10 +40,13 @@ class FloopController extends Controller
         $viewport = $request->input('_viewport', '');
 
         $user = 'Guest';
-        if ($request->user()) {
-            $user = $request->user()->name;
-            if ($request->user()->email) {
-                $user .= ' ('.$request->user()->email.')';
+        $authUser = $request->user();
+        if ($authUser) {
+            /** @var \Illuminate\Foundation\Auth\User $authUser */
+            $user = $authUser->getAttribute('name') ?? 'User';
+            $email = $authUser->getAttribute('email');
+            if ($email) {
+                $user .= ' ('.$email.')';
             }
         }
 
@@ -70,7 +72,7 @@ class FloopController extends Controller
 
         $filename = $this->manager->store($data);
 
-        $typeLabel = $typeLabels[$data['type']] ?? 'Feedback';
+        $typeLabel = FloopManager::TYPE_LABELS[$data['type']] ?? 'Feedback';
 
         return response()->json([
             'success' => true,
@@ -79,16 +81,25 @@ class FloopController extends Controller
         ]);
     }
 
+    /**
+     * List all work orders grouped by status.
+     */
     public function index(): JsonResponse
     {
         return response()->json($this->manager->all());
     }
 
+    /**
+     * Return pending and actioned counts for the badge.
+     */
     public function counts(): JsonResponse
     {
         return response()->json($this->manager->counts());
     }
 
+    /**
+     * Action, reopen, or delete a work order.
+     */
     public function action(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -99,6 +110,7 @@ class FloopController extends Controller
         $filename = $validated['filename'];
         $action = $validated['action'];
 
+        /** @var 'done'|'reopen'|'delete' $action */
         $result = match ($action) {
             'done' => $this->manager->markActioned($filename),
             'reopen' => $this->manager->markPending($filename),

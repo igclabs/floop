@@ -11,8 +11,15 @@ use IgcLabs\Floop\Console\Commands\FloopListCommand;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Registers the Floop singleton, config, routes, views, Blade directive,
+ * middleware, and console commands.
+ */
 class FloopServiceProvider extends ServiceProvider
 {
+    /**
+     * Register the FloopManager singleton and merge default config.
+     */
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/floop.php', 'floop');
@@ -24,6 +31,9 @@ class FloopServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Boot package services: middleware, routes, views, publishing, and commands.
+     */
     public function boot(): void
     {
         $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
