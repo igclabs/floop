@@ -99,7 +99,7 @@ class FloopManager
     /**
      * Store a new work order as a markdown file in the pending directory.
      *
-     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string}  $data
+     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string, screenshot?: string}  $data
      * @return string The generated filename.
      */
     public function store(array $data): string
@@ -108,9 +108,20 @@ class FloopManager
         $slug = Str::slug(Str::limit($data['message'], 50, ''));
         $filename = $timestamp->format('Y-m-d_His').'_'.$slug.'.md';
 
-        $markdown = $this->buildMarkdown($data, $timestamp);
+        $markdown = $this->buildMarkdown($data, $timestamp, $filename);
 
         file_put_contents($this->pendingPath.'/'.$filename, $markdown);
+
+        if (! empty($data['screenshot'])) {
+            $base64 = $data['screenshot'];
+            $base64 = preg_replace('#^data:image/\w+;base64,#', '', $base64);
+            $decoded = base64_decode($base64, true);
+
+            if ($decoded !== false) {
+                $screenshotFile = $this->screenshotFilename($filename);
+                file_put_contents($this->pendingPath.'/'.$screenshotFile, $decoded);
+            }
+        }
 
         event(new FeedbackStored($filename, $data['type'], $data['message']));
 
@@ -141,6 +152,8 @@ class FloopManager
         file_put_contents($dest, $content);
         unlink($source);
 
+        $this->moveCompanionScreenshot($filename, $this->pendingPath, $this->actionedPath);
+
         event(new FeedbackActioned($filename));
 
         return true;
@@ -169,6 +182,8 @@ class FloopManager
         file_put_contents($dest, $content);
         unlink($source);
 
+        $this->moveCompanionScreenshot($filename, $this->actionedPath, $this->pendingPath);
+
         return true;
     }
 
@@ -185,6 +200,11 @@ class FloopManager
 
         if (! file_exists($path)) {
             return false;
+        }
+
+        $screenshotPath = $dir.'/'.$this->screenshotFilename($filename);
+        if (file_exists($screenshotPath)) {
+            unlink($screenshotPath);
         }
 
         return unlink($path);
@@ -273,7 +293,7 @@ class FloopManager
         return $items;
     }
 
-    protected function buildMarkdown(array $data, \Illuminate\Support\Carbon $timestamp): string
+    protected function buildMarkdown(array $data, \Illuminate\Support\Carbon $timestamp, string $filename = ''): string
     {
         $type = $data['type'] ?? 'feedback';
         $emoji = self::TYPE_EMOJIS[$type] ?? self::TYPE_EMOJIS['feedback'];
@@ -350,6 +370,26 @@ class FloopManager
             }
         }
 
+        if (! empty($data['screenshot']) && $filename !== '') {
+            $screenshotFile = $this->screenshotFilename($filename);
+            $md .= "\n---\n\n## Screenshot\n\n![Screenshot]({$screenshotFile})\n";
+        }
+
         return $md;
+    }
+
+    private function screenshotFilename(string $mdFilename): string
+    {
+        return preg_replace('/\.md$/', '.png', $mdFilename);
+    }
+
+    private function moveCompanionScreenshot(string $filename, string $fromDir, string $toDir): void
+    {
+        $screenshotFile = $this->screenshotFilename($filename);
+        $source = $fromDir.'/'.$screenshotFile;
+
+        if (file_exists($source)) {
+            rename($source, $toDir.'/'.$screenshotFile);
+        }
     }
 }

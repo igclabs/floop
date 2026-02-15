@@ -174,4 +174,35 @@ class FloopControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson(['success' => false]);
     }
+
+    // ── Screenshot support ──────────────────────────────────
+
+    public function test_store_with_screenshot_saves_png_file(): void
+    {
+        $response = $this->postJson('/_feedback', [
+            'message' => 'Button in wrong place',
+            'type' => 'bug',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('fake-png-data'),
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $pngFiles = glob($this->tempStoragePath.'/pending/*.png');
+        $this->assertCount(1, $pngFiles);
+        $this->assertSame('fake-png-data', file_get_contents($pngFiles[0]));
+    }
+
+    public function test_store_rejects_oversized_screenshot(): void
+    {
+        config()->set('floop.screenshot_max_size', 100);
+
+        $response = $this->postJson('/_feedback', [
+            'message' => 'Oversized screenshot',
+            'type' => 'bug',
+            'screenshot' => str_repeat('x', 101),
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('screenshot');
+    }
 }

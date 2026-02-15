@@ -166,6 +166,27 @@
         margin: 0;
     }
 
+    #floop-widget .floop-panel-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #floop-widget .floop-screenshot-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--floop-text-secondary);
+        font-size: 15px;
+        line-height: 1;
+        padding: 0 2px;
+        transition: color 0.12s ease;
+    }
+
+    #floop-widget .floop-screenshot-btn:hover {
+        color: var(--floop-primary);
+    }
+
     #floop-widget .floop-close {
         background: none;
         border: none;
@@ -260,6 +281,38 @@
         cursor: not-allowed;
     }
 
+    #floop-widget .floop-screenshot-preview {
+        position: relative;
+        margin-bottom: 10px;
+        display: none;
+    }
+
+    #floop-widget .floop-screenshot-preview img {
+        width: 100%;
+        max-height: 120px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--floop-border);
+    }
+
+    #floop-widget .floop-screenshot-remove {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     #floop-widget .floop-success {
         display: none;
         padding: 30px 14px;
@@ -278,7 +331,10 @@
     <div class="floop-panel">
         <div class="floop-panel-header">
             <h3>Feedback</h3>
-            <button class="floop-close" type="button">&times;</button>
+            <div class="floop-panel-header-actions">
+                <button class="floop-screenshot-btn" type="button" title="Capture screenshot">&#x1F4F7;</button>
+                <button class="floop-close" type="button">&times;</button>
+            </div>
         </div>
         <div class="floop-panel-body">
             <div class="floop-form">
@@ -299,6 +355,11 @@
                         @endif
                     </div>
                 </details>
+
+                <div class="floop-screenshot-preview">
+                    <img src="" alt="Screenshot preview">
+                    <button class="floop-screenshot-remove" type="button">&times;</button>
+                </div>
 
                 <button class="floop-submit" type="button">Floop It</button>
             </div>
@@ -327,6 +388,11 @@
     var badge = widget.querySelector('.floop-badge');
     var formEl = widget.querySelector('.floop-form');
     var successEl = widget.querySelector('.floop-success');
+    var screenshotBtn = widget.querySelector('.floop-screenshot-btn');
+    var screenshotPreview = widget.querySelector('.floop-screenshot-preview');
+    var screenshotImg = screenshotPreview.querySelector('img');
+    var screenshotRemove = widget.querySelector('.floop-screenshot-remove');
+    var screenshotData = null;
 
     function getCsrf() {
         var meta = document.querySelector('meta[name="csrf-token"]');
@@ -349,6 +415,52 @@
             osc.stop(ctx.currentTime + 0.2);
         } catch(e) {}
     }
+
+    function loadHtml2Canvas() {
+        if (window.html2canvas) return Promise.resolve(window.html2canvas);
+        return new Promise(function(resolve, reject) {
+            var existing = document.querySelector('script[data-floop-html2canvas]');
+            if (existing) {
+                existing.addEventListener('load', function() { resolve(window.html2canvas); });
+                existing.addEventListener('error', reject);
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.setAttribute('data-floop-html2canvas', '1');
+            script.onload = function() { resolve(window.html2canvas); };
+            script.onerror = function() { reject(new Error('Failed to load html2canvas')); };
+            document.head.appendChild(script);
+        });
+    }
+
+    function captureScreenshot() {
+        screenshotBtn.disabled = true;
+        widget.style.display = 'none';
+
+        loadHtml2Canvas().then(function(html2canvas) {
+            return html2canvas(document.body);
+        }).then(function(canvas) {
+            widget.style.display = '';
+            screenshotData = canvas.toDataURL('image/png');
+            screenshotImg.src = screenshotData;
+            screenshotPreview.style.display = 'block';
+            screenshotBtn.disabled = false;
+        }).catch(function(err) {
+            widget.style.display = '';
+            screenshotBtn.disabled = false;
+            console.error('Floop screenshot error:', err);
+        });
+    }
+
+    function clearScreenshot() {
+        screenshotData = null;
+        screenshotImg.src = '';
+        screenshotPreview.style.display = 'none';
+    }
+
+    screenshotBtn.addEventListener('click', captureScreenshot);
+    screenshotRemove.addEventListener('click', clearScreenshot);
 
     function openPanel() {
         panel.classList.add('floop-open');
@@ -408,6 +520,10 @@
 
         body._viewport = window.innerWidth + 'x' + window.innerHeight;
 
+        if (screenshotData) {
+            body.screenshot = screenshotData;
+        }
+
         fetch(prefix, {
             method: 'POST',
             headers: {
@@ -426,6 +542,7 @@
                 formEl.style.display = 'none';
                 successEl.style.display = 'block';
                 messageEl.value = '';
+                clearScreenshot();
 
                 setTimeout(function() {
                     closePanel();

@@ -213,4 +213,89 @@ class FloopManagerTest extends TestCase
         $this->assertTrue($this->manager->isEnabled());
         $this->assertFileDoesNotExist($this->tempStoragePath.'/.disabled');
     }
+
+    // ── screenshot support ─────────────────────────────────
+
+    public function test_store_saves_screenshot_as_png_file(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Layout broken',
+            'type' => 'bug',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('fake-png-data'),
+        ]);
+
+        $pngFilename = preg_replace('/\.md$/', '.png', $filename);
+        $this->assertFileExists($this->tempStoragePath.'/pending/'.$pngFilename);
+        $this->assertSame('fake-png-data', file_get_contents($this->tempStoragePath.'/pending/'.$pngFilename));
+    }
+
+    public function test_store_includes_screenshot_reference_in_markdown(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Button misaligned',
+            'type' => 'feedback',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('fake-png-data'),
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringContainsString('## Screenshot', $content);
+        $this->assertStringContainsString('![Screenshot]', $content);
+    }
+
+    public function test_mark_actioned_moves_companion_screenshot(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Move screenshot too',
+            'type' => 'bug',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('png-bytes'),
+        ]);
+
+        $pngFilename = preg_replace('/\.md$/', '.png', $filename);
+        $this->manager->markActioned($filename);
+
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$pngFilename);
+        $this->assertFileExists($this->tempStoragePath.'/actioned/'.$pngFilename);
+    }
+
+    public function test_mark_pending_moves_companion_screenshot(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Reopen with screenshot',
+            'type' => 'task',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('png-bytes'),
+        ]);
+
+        $pngFilename = preg_replace('/\.md$/', '.png', $filename);
+        $this->manager->markActioned($filename);
+        $this->manager->markPending($filename);
+
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/actioned/'.$pngFilename);
+        $this->assertFileExists($this->tempStoragePath.'/pending/'.$pngFilename);
+    }
+
+    public function test_delete_removes_companion_screenshot(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'Delete with screenshot',
+            'type' => 'feedback',
+            'screenshot' => 'data:image/png;base64,'.base64_encode('png-bytes'),
+        ]);
+
+        $pngFilename = preg_replace('/\.md$/', '.png', $filename);
+        $this->manager->delete($filename, 'pending');
+
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$pngFilename);
+    }
+
+    public function test_store_without_screenshot_creates_no_png(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'No screenshot here',
+            'type' => 'feedback',
+        ]);
+
+        $pngFilename = preg_replace('/\.md$/', '.png', $filename);
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$pngFilename);
+    }
 }

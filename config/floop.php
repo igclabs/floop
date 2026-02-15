@@ -30,4 +30,6 @@ return [
 
     'hide_shortcut' => 'ctrl+shift+h',
 
+    'screenshot_max_size' => 5242880,
+
 ];

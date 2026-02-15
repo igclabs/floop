@@ -24,6 +24,7 @@ class FloopController extends Controller
             'type' => 'nullable|in:feedback,task,idea,bug',
             'priority' => 'nullable|in:low,medium,high',
             'extra_context' => 'nullable|array',
+            'screenshot' => 'nullable|string|max:'.config('floop.screenshot_max_size', 5242880),
         ]);
 
         $url = $request->header('X-Feedback-URL')
@@ -68,6 +69,10 @@ class FloopController extends Controller
 
         if (! empty($validated['extra_context'])) {
             $data['extra_context'] = $validated['extra_context'];
+        }
+
+        if (! empty($validated['screenshot'])) {
+            $data['screenshot'] = $validated['screenshot'];
         }
 
         $filename = $this->manager->store($data);
