@@ -130,6 +130,12 @@ By default, Floop auto-injects the widget before `</body>` on every HTML respons
 - All styles scoped under `#floop-widget` to avoid conflicts
 - Submit sound synthesized via Web Audio API (no audio files)
 
+## Roadmap
+
+- **React & Vue support** — first-class components for React and Vue so the widget integrates natively into SPA and Inertia apps instead of relying on Blade injection
+- **Storage interface & drivers** — a pluggable storage layer so work orders can live in a database, S3, or any custom driver instead of only the local filesystem
+- **Team testing tools** — better support for multi-tester workflows: assignments, labels, filtering, and visibility controls so teams can triage and track feedback together
+
 ## License
 
 MIT - IGC Enterprises Ltd
