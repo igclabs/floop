@@ -65,7 +65,13 @@ php artisan floop:list --type=bug
 
 # Close the loop / reopen
 php artisan floop:action filename.md
+php artisan floop:action filename.md --note="What you changed"
 php artisan floop:action filename.md --reopen
+
+# Install agent skill
+php artisan floop:install-skill             # auto-detects .claude, .codex, .agents, .opencode
+php artisan floop:install-skill --choose    # manually pick targets
+php artisan floop:install-skill --force     # overwrite existing
 
 # Clear work orders
 php artisan floop:clear              # clear pending
