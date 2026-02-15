@@ -152,4 +152,65 @@ class FloopManagerTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    // ── all() ──────────────────────────────────────────────
+
+    public function test_all_returns_pending_and_actioned_arrays(): void
+    {
+        $this->manager->store(['message' => 'Pending item', 'type' => 'feedback']);
+        $filename = $this->manager->store(['message' => 'Actioned item', 'type' => 'bug']);
+        $this->manager->markActioned($filename);
+
+        $all = $this->manager->all();
+
+        $this->assertCount(1, $all['pending']);
+        $this->assertCount(1, $all['actioned']);
+        $this->assertStringContainsString('Pending item', $all['pending'][0]['title']);
+    }
+
+    public function test_all_returns_empty_arrays_when_no_items(): void
+    {
+        $all = $this->manager->all();
+
+        $this->assertSame([], $all['pending']);
+        $this->assertSame([], $all['actioned']);
+    }
+
+    // ── counts() ───────────────────────────────────────────
+
+    public function test_counts_returns_correct_totals(): void
+    {
+        $this->manager->store(['message' => 'One', 'type' => 'feedback']);
+        $this->manager->store(['message' => 'Two', 'type' => 'feedback']);
+        $filename = $this->manager->store(['message' => 'Three', 'type' => 'bug']);
+        $this->manager->markActioned($filename);
+
+        $counts = $this->manager->counts();
+
+        $this->assertSame(2, $counts['pending']);
+        $this->assertSame(1, $counts['actioned']);
+    }
+
+    // ── enable() / disable() / isEnabled() ─────────────────
+
+    public function test_disable_creates_flag_file_and_reports_disabled(): void
+    {
+        $this->assertTrue($this->manager->isEnabled());
+
+        $this->manager->disable();
+
+        $this->assertFalse($this->manager->isEnabled());
+        $this->assertFileExists($this->tempStoragePath.'/.disabled');
+    }
+
+    public function test_enable_removes_flag_file_and_reports_enabled(): void
+    {
+        $this->manager->disable();
+        $this->assertFalse($this->manager->isEnabled());
+
+        $this->manager->enable();
+
+        $this->assertTrue($this->manager->isEnabled());
+        $this->assertFileDoesNotExist($this->tempStoragePath.'/.disabled');
+    }
 }

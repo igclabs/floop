@@ -20,6 +20,8 @@ abstract class TestCase extends BaseTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('floop.storage_path', $this->tempStoragePath);
+        $app['config']->set('floop.environments', ['testing']);
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
     }
 
     protected function setUp(): void
