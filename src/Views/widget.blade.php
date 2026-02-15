@@ -392,6 +392,31 @@
         justify-content: center;
     }
 
+    #floop-widget .floop-error {
+        display: none;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        color: #dc2626;
+        font-size: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        #floop-widget .floop-error {
+            background: #451a1a;
+            border-color: #7f1d1d;
+            color: #fca5a5;
+        }
+    }
+
+    [data-bs-theme="dark"] #floop-widget .floop-error {
+        background: #451a1a;
+        border-color: #7f1d1d;
+        color: #fca5a5;
+    }
+
     #floop-widget .floop-success {
         display: none;
         padding: 30px 14px;
@@ -578,6 +603,7 @@
                     <button class="floop-screenshot-remove" type="button">&times;</button>
                 </div>
 
+                <div class="floop-error"></div>
                 <button class="floop-submit" type="button">Floop It</button>
             </div>
 
@@ -620,10 +646,17 @@
     var diagnosticsSummary = widget.querySelector('.floop-diagnostics-summary');
     var diagnosticsRemove = widget.querySelector('.floop-diagnostics-remove');
     var diagnosticsAttached = false;
+    var errorEl = widget.querySelector('.floop-error');
+    var csrfToken = @json(csrf_token());
 
-    function getCsrf() {
-        var meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
+    function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+    }
+
+    function clearError() {
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
     }
 
     function playFloop() {
@@ -889,6 +922,7 @@
         }
         messageEl.style.borderColor = '';
 
+        clearError();
         submitBtn.disabled = true;
         submitBtn.textContent = 'Flooping\u2026';
 
@@ -931,13 +965,21 @@
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': getCsrf(),
+                'X-CSRF-TOKEN': csrfToken,
                 'X-Feedback-URL': window.location.href,
                 'X-Feedback-Method': serverContext ? (serverContext.method || 'GET') : 'GET'
             },
             body: JSON.stringify(body)
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.status === 419) {
+                throw { floopMessage: 'Session expired. Please refresh the page and try again.' };
+            }
+            if (!res.ok) {
+                throw { floopMessage: 'Something went wrong (HTTP ' + res.status + '). Please try again.' };
+            }
+            return res.json();
+        })
         .then(function(data) {
             if (data.success) {
                 playFloop();
@@ -957,10 +999,12 @@
                 }, 1500);
 
                 fetchCounts();
+            } else {
+                showError(data.message || 'Submission failed. Please try again.');
             }
         })
         .catch(function(err) {
-            console.error('Floop error:', err);
+            showError(err && err.floopMessage ? err.floopMessage : 'Could not submit feedback. Please try again.');
         })
         .finally(function() {
             submitBtn.disabled = false;
@@ -970,7 +1014,7 @@
 
     function fetchCounts() {
         fetch(prefix + '/counts', {
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': getCsrf() }
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
