@@ -13,7 +13,7 @@
     $routePrefix = config('floop.route_prefix', '_feedback');
     $context = $_floopContext ?? [];
 
-    $capturedViews = \IgcLabs\Floop\Http\Middleware\InjectFloopContext::$capturedViews;
+    $capturedViews = $_floopCapturedViews ?? [];
     if (!empty($capturedViews)) {
         $context['views'] = $capturedViews;
     }
