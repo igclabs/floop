@@ -5,3 +5,4 @@ parameters:
     paths:
         - src/
     level: 5
+    reportUnmatchedIgnoredErrors: false
