@@ -297,7 +297,7 @@ class FloopManager
         return $items;
     }
 
-    protected function buildMarkdown(array $data, \Illuminate\Support\Carbon $timestamp, string $filename = ''): string
+    protected function buildMarkdown(array $data, \DateTimeInterface $timestamp, string $filename = ''): string
     {
         $type = $data['type'] ?? 'feedback';
         $emoji = self::TYPE_EMOJIS[$type] ?? self::TYPE_EMOJIS['feedback'];
