@@ -131,7 +131,7 @@ class FloopManager
     /**
      * Move a work order from pending to actioned and update its status line.
      */
-    public function markActioned(string $filename): bool
+    public function markActioned(string $filename, ?string $note = null): bool
     {
         $filename = $this->sanitiseFilename($filename);
         $source = $this->pendingPath.'/'.$filename;
@@ -148,6 +148,10 @@ class FloopManager
             "**Status:** \u{2705} Actioned ({$actionedAt})",
             $content
         );
+
+        if ($note !== null && $note !== '') {
+            $content .= "\n---\n\n## Agent Notes\n\n{$note}\n";
+        }
 
         file_put_contents($dest, $content);
         unlink($source);

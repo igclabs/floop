@@ -140,6 +140,7 @@ class FloopController extends Controller
         $validated = $request->validate([
             'filename' => 'required|string',
             'action' => 'required|in:done,reopen,delete',
+            'note' => 'nullable|string|max:2000',
         ]);
 
         $filename = $validated['filename'];
@@ -147,7 +148,7 @@ class FloopController extends Controller
 
         /** @var 'done'|'reopen'|'delete' $action */
         $result = match ($action) {
-            'done' => $this->manager->markActioned($filename),
+            'done' => $this->manager->markActioned($filename, $validated['note'] ?? null),
             'reopen' => $this->manager->markPending($filename),
             'delete' => $this->manager->delete($filename, 'pending') || $this->manager->delete($filename, 'actioned'),
         };

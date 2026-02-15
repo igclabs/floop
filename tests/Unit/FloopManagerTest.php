@@ -83,6 +83,27 @@ class FloopManagerTest extends TestCase
         $this->assertStringNotContainsString('Pending', $content);
     }
 
+    public function test_mark_actioned_with_note_appends_agent_notes_section(): void
+    {
+        $filename = $this->manager->store(['message' => 'Fix the margin', 'type' => 'bug']);
+
+        $this->manager->markActioned($filename, 'Adjusted the margin from 20px to 8px');
+
+        $content = file_get_contents($this->tempStoragePath.'/actioned/'.$filename);
+        $this->assertStringContainsString('## Agent Notes', $content);
+        $this->assertStringContainsString('Adjusted the margin from 20px to 8px', $content);
+    }
+
+    public function test_mark_actioned_without_note_omits_agent_notes_section(): void
+    {
+        $filename = $this->manager->store(['message' => 'Fix the margin', 'type' => 'bug']);
+
+        $this->manager->markActioned($filename);
+
+        $content = file_get_contents($this->tempStoragePath.'/actioned/'.$filename);
+        $this->assertStringNotContainsString('## Agent Notes', $content);
+    }
+
     public function test_mark_actioned_returns_false_for_nonexistent_file(): void
     {
         $result = $this->manager->markActioned('nonexistent.md');

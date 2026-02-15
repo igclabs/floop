@@ -164,6 +164,23 @@ class FloopControllerTest extends TestCase
         $this->assertFileDoesNotExist($this->tempStoragePath.'/pending/'.$filename);
     }
 
+    public function test_action_done_with_note_includes_note_in_work_order(): void
+    {
+        $filename = $this->manager->store(['message' => 'Fix the margin', 'type' => 'bug']);
+
+        $response = $this->postJson('/_feedback/action', [
+            'filename' => $filename,
+            'action' => 'done',
+            'note' => 'Adjusted the margin from 20px to 8px',
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $content = file_get_contents($this->tempStoragePath.'/actioned/'.$filename);
+        $this->assertStringContainsString('## Agent Notes', $content);
+        $this->assertStringContainsString('Adjusted the margin from 20px to 8px', $content);
+    }
+
     public function test_action_returns_404_for_nonexistent_file(): void
     {
         $response = $this->postJson('/_feedback/action', [

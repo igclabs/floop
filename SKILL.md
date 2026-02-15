@@ -17,7 +17,7 @@ For each pending work order:
 2. **Use the Page Context section** to locate the relevant code. The View tells you which Blade template, the Controller tells you which method, the Route tells you the URL structure
 3. **Assess the request**: is it something you can action (a code change, a UI tweak, a bug fix) or is it ambiguous/out of scope?
 4. **Make the change** if it's clear and actionable
-5. **Close the loop** by running `php artisan floop:action <filename>`
+5. **Close the loop** by running `php artisan floop:action <filename> --note="Brief description of what you changed"`
 6. **Move to the next work order**
 
 ## Reading a Work Order
@@ -83,8 +83,10 @@ Use the context fields as direct pointers:
 When you've completed the work for a work order:
 
 ```bash
-php artisan floop:action <filename>
+php artisan floop:action <filename> --note="Describe what you changed"
 ```
+
+The `--note` flag appends an **Agent Notes** section to the actioned work order, explaining what was done. Always include a note so the tester knows how their feedback was addressed.
 
 This moves the file from `pending/` to `actioned/` and updates its status. The loop is closed.
 

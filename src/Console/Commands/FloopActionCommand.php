@@ -9,7 +9,8 @@ class FloopActionCommand extends Command
 {
     protected $signature = 'floop:action
         {filename : The feedback filename to action}
-        {--reopen : Reopen an actioned item (move back to pending)}';
+        {--reopen : Reopen an actioned item (move back to pending)}
+        {--note= : A note describing what was done}';
 
     protected $description = 'Mark a feedback item as actioned (or reopen it)';
 
@@ -30,7 +31,7 @@ class FloopActionCommand extends Command
             return self::FAILURE;
         }
 
-        $result = $manager->markActioned($filename);
+        $result = $manager->markActioned($filename, $this->option('note'));
         if ($result) {
             $this->info("\u{2705} Actioned: {$filename}");
 
