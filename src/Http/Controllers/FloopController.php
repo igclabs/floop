@@ -34,6 +34,15 @@ class FloopController extends Controller
             'network_failures.*.status' => 'nullable|integer',
             'network_failures.*.statusText' => 'nullable|string|max:200',
             'network_failures.*.timestamp' => 'nullable|string|max:20',
+            'targeted_element' => 'nullable|array',
+            'targeted_element.selector' => 'required_with:targeted_element|string|max:1000',
+            'targeted_element.tagName' => 'nullable|string|max:50',
+            'targeted_element.textContent' => 'nullable|string|max:500',
+            'targeted_element.boundingBox' => 'nullable|array',
+            'targeted_element.boundingBox.top' => 'nullable|numeric',
+            'targeted_element.boundingBox.left' => 'nullable|numeric',
+            'targeted_element.boundingBox.width' => 'nullable|numeric',
+            'targeted_element.boundingBox.height' => 'nullable|numeric',
         ]);
 
         $url = $request->header('X-Feedback-URL')
@@ -90,6 +99,10 @@ class FloopController extends Controller
 
         if (! empty($validated['network_failures'])) {
             $data['network_failures'] = $validated['network_failures'];
+        }
+
+        if (! empty($validated['targeted_element'])) {
+            $data['targeted_element'] = $validated['targeted_element'];
         }
 
         $filename = $this->manager->store($data);

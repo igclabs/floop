@@ -172,6 +172,7 @@
         gap: 6px;
     }
 
+    #floop-widget .floop-target-btn,
     #floop-widget .floop-screenshot-btn,
     #floop-widget .floop-diagnostics-btn {
         background: none;
@@ -184,13 +185,55 @@
         transition: color 0.12s ease;
     }
 
+    #floop-widget .floop-target-btn:hover,
     #floop-widget .floop-screenshot-btn:hover,
     #floop-widget .floop-diagnostics-btn:hover {
         color: var(--floop-primary);
     }
 
+    #floop-widget .floop-target-btn.floop-attached,
     #floop-widget .floop-diagnostics-btn.floop-attached {
         color: var(--floop-primary);
+    }
+
+    #floop-widget .floop-target-preview {
+        position: relative;
+        margin-bottom: 10px;
+        padding: 8px 28px 8px 8px;
+        background: var(--floop-bg-secondary);
+        border: 1px solid var(--floop-border);
+        border-radius: 6px;
+        font-size: 11px;
+        color: var(--floop-text-secondary);
+        display: none;
+    }
+
+    #floop-widget .floop-target-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.4);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .floop-pick-overlay {
+        position: fixed;
+        pointer-events: none;
+        z-index: 99998;
+        background: rgba(75, 147, 214, 0.25);
+        border: 2px solid rgba(75, 147, 214, 0.7);
+        border-radius: 3px;
+        transition: top 0.05s ease, left 0.05s ease, width 0.05s ease, height 0.05s ease;
     }
 
     #floop-widget .floop-close {
@@ -494,6 +537,7 @@
         <div class="floop-panel-header">
             <h3>Feedback</h3>
             <div class="floop-panel-header-actions">
+                <button class="floop-target-btn" type="button" title="Pick an element on the page">&#x2295;</button>
                 <button class="floop-diagnostics-btn" type="button" title="Attach console errors &amp; network failures">&gt;_</button>
                 <button class="floop-screenshot-btn" type="button" title="Capture screenshot">&#x1F4F7;</button>
                 <button class="floop-close" type="button">&times;</button>
@@ -518,6 +562,11 @@
                         @endif
                     </div>
                 </details>
+
+                <div class="floop-target-preview">
+                    <span class="floop-target-summary"></span>
+                    <button class="floop-target-remove" type="button">&times;</button>
+                </div>
 
                 <div class="floop-diagnostics-preview">
                     <span class="floop-diagnostics-summary"></span>
@@ -561,6 +610,11 @@
     var screenshotImg = screenshotPreview.querySelector('img');
     var screenshotRemove = widget.querySelector('.floop-screenshot-remove');
     var screenshotData = null;
+    var targetBtn = widget.querySelector('.floop-target-btn');
+    var targetPreview = widget.querySelector('.floop-target-preview');
+    var targetSummary = widget.querySelector('.floop-target-summary');
+    var targetRemove = widget.querySelector('.floop-target-remove');
+    var targetedElement = null;
     var diagnosticsBtn = widget.querySelector('.floop-diagnostics-btn');
     var diagnosticsPreview = widget.querySelector('.floop-diagnostics-preview');
     var diagnosticsSummary = widget.querySelector('.floop-diagnostics-summary');
@@ -660,6 +714,143 @@
     });
     diagnosticsRemove.addEventListener('click', clearDiagnostics);
 
+    // ── Element targeting (pick mode) ──────────────────────
+
+    var pickOverlay = null;
+    var pickActive = false;
+
+    function buildSelector(el) {
+        var parts = [];
+        while (el && el !== document.body && el !== document.documentElement) {
+            if (el.id) {
+                parts.unshift('#' + el.id);
+                break;
+            }
+            var seg = el.tagName.toLowerCase();
+            if (el.className && typeof el.className === 'string') {
+                var classes = el.className.trim().split(/\s+/).filter(function(c) { return c.length > 0; });
+                if (classes.length) seg += '.' + classes.join('.');
+            }
+            var parent = el.parentElement;
+            if (parent) {
+                var siblings = parent.children;
+                var sameTag = 0;
+                var index = 0;
+                for (var i = 0; i < siblings.length; i++) {
+                    if (siblings[i].tagName === el.tagName) {
+                        sameTag++;
+                        if (siblings[i] === el) index = sameTag;
+                    }
+                }
+                if (sameTag > 1) seg += ':nth-child(' + (Array.prototype.indexOf.call(parent.children, el) + 1) + ')';
+            }
+            parts.unshift(seg);
+            el = parent;
+        }
+        return parts.join(' > ');
+    }
+
+    function onPickMove(e) {
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el || widget.contains(el)) {
+            if (pickOverlay) pickOverlay.style.display = 'none';
+            return;
+        }
+        var rect = el.getBoundingClientRect();
+        if (pickOverlay) {
+            pickOverlay.style.display = 'block';
+            pickOverlay.style.top = rect.top + 'px';
+            pickOverlay.style.left = rect.left + 'px';
+            pickOverlay.style.width = rect.width + 'px';
+            pickOverlay.style.height = rect.height + 'px';
+        }
+    }
+
+    function onPickClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el || widget.contains(el)) {
+            exitPickMode();
+            return;
+        }
+        var rect = el.getBoundingClientRect();
+        var text = (el.textContent || '').trim();
+        if (text.length > 200) text = text.substring(0, 200) + '...';
+        targetedElement = {
+            selector: buildSelector(el),
+            tagName: el.tagName,
+            textContent: text,
+            boundingBox: {
+                top: Math.round(rect.top),
+                left: Math.round(rect.left),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height)
+            }
+        };
+        exitPickMode();
+        showTargetPreview();
+    }
+
+    function onPickKeydown(e) {
+        if (e.key === 'Escape') {
+            exitPickMode();
+        }
+    }
+
+    function enterPickMode() {
+        if (pickActive) return;
+        pickActive = true;
+        closePanel();
+        pickOverlay = document.createElement('div');
+        pickOverlay.className = 'floop-pick-overlay';
+        document.body.appendChild(pickOverlay);
+        document.body.style.cursor = 'crosshair';
+        document.addEventListener('mousemove', onPickMove, true);
+        document.addEventListener('click', onPickClick, true);
+        document.addEventListener('keydown', onPickKeydown, true);
+    }
+
+    function exitPickMode() {
+        if (!pickActive) return;
+        pickActive = false;
+        if (pickOverlay && pickOverlay.parentNode) {
+            pickOverlay.parentNode.removeChild(pickOverlay);
+        }
+        pickOverlay = null;
+        document.body.style.cursor = '';
+        document.removeEventListener('mousemove', onPickMove, true);
+        document.removeEventListener('click', onPickClick, true);
+        document.removeEventListener('keydown', onPickKeydown, true);
+        openPanel();
+    }
+
+    function showTargetPreview() {
+        if (!targetedElement) return;
+        var label = targetedElement.tagName.toLowerCase();
+        if (targetedElement.selector) label += ' — ' + targetedElement.selector;
+        if (targetedElement.textContent) {
+            var preview = targetedElement.textContent.length > 40
+                ? targetedElement.textContent.substring(0, 40) + '...'
+                : targetedElement.textContent;
+            label += ' "' + preview + '"';
+        }
+        targetSummary.textContent = label;
+        targetPreview.style.display = 'block';
+        targetBtn.classList.add('floop-attached');
+    }
+
+    function clearTargetedElement() {
+        targetedElement = null;
+        targetPreview.style.display = 'none';
+        targetBtn.classList.remove('floop-attached');
+    }
+
+    targetBtn.addEventListener('click', function() {
+        targetedElement ? clearTargetedElement() : enterPickMode();
+    });
+    targetRemove.addEventListener('click', clearTargetedElement);
+
     function openPanel() {
         panel.classList.add('floop-open');
         formEl.style.display = '';
@@ -722,6 +913,10 @@
             body.screenshot = screenshotData;
         }
 
+        if (targetedElement) {
+            body.targeted_element = targetedElement;
+        }
+
         if (diagnosticsAttached) {
             if (window.__floopErrors && window.__floopErrors.length) {
                 body.console_errors = window.__floopErrors;
@@ -750,6 +945,7 @@
                 successEl.style.display = 'block';
                 messageEl.value = '';
                 clearScreenshot();
+                clearTargetedElement();
                 clearDiagnostics();
                 window.__floopErrors = [];
                 window.__floopNetworkFailures = [];
@@ -826,6 +1022,7 @@
     });
 
     document.addEventListener('click', function(e) {
+        if (pickActive) return;
         if (panel.classList.contains('floop-open') && !widget.contains(e.target)) closePanel();
     });
 })();

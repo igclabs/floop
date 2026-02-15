@@ -336,6 +336,40 @@ class FloopManagerTest extends TestCase
         $this->assertStringNotContainsString('## Network Failures', $content);
     }
 
+    // ── targeted element ───────────────────────────────
+
+    public function test_store_includes_targeted_element_in_markdown(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'This button is wrong',
+            'type' => 'bug',
+            'targeted_element' => [
+                'selector' => '#main > div.container > button.submit',
+                'tagName' => 'BUTTON',
+                'textContent' => 'Submit Order',
+                'boundingBox' => ['top' => 340, 'left' => 520, 'width' => 240, 'height' => 36],
+            ],
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringContainsString('## Targeted Element', $content);
+        $this->assertStringContainsString('#main > div.container > button.submit', $content);
+        $this->assertStringContainsString('BUTTON', $content);
+        $this->assertStringContainsString('Submit Order', $content);
+        $this->assertStringContainsString('340, 520 (240×36)', $content);
+    }
+
+    public function test_store_without_targeted_element_omits_section(): void
+    {
+        $filename = $this->manager->store([
+            'message' => 'General feedback',
+            'type' => 'feedback',
+        ]);
+
+        $content = file_get_contents($this->tempStoragePath.'/pending/'.$filename);
+        $this->assertStringNotContainsString('## Targeted Element', $content);
+    }
+
     public function test_store_without_screenshot_creates_no_png(): void
     {
         $filename = $this->manager->store([

@@ -231,6 +231,31 @@ class FloopControllerTest extends TestCase
         $this->assertStringContainsString('500', $content);
     }
 
+    // ── Targeted element ──────────────────────────────────
+
+    public function test_store_with_targeted_element_includes_it_in_work_order(): void
+    {
+        $response = $this->postJson('/_feedback', [
+            'message' => 'This button is wrong',
+            'type' => 'bug',
+            'targeted_element' => [
+                'selector' => '#main > div.container > button.submit',
+                'tagName' => 'BUTTON',
+                'textContent' => 'Submit Order',
+                'boundingBox' => ['top' => 340, 'left' => 520, 'width' => 240, 'height' => 36],
+            ],
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $files = glob($this->tempStoragePath.'/pending/*.md');
+        $content = file_get_contents($files[0]);
+        $this->assertStringContainsString('## Targeted Element', $content);
+        $this->assertStringContainsString('#main > div.container > button.submit', $content);
+        $this->assertStringContainsString('BUTTON', $content);
+        $this->assertStringContainsString('Submit Order', $content);
+    }
+
     public function test_store_rejects_oversized_screenshot(): void
     {
         config()->set('floop.screenshot_max_size', 100);

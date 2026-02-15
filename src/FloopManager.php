@@ -99,7 +99,7 @@ class FloopManager
     /**
      * Store a new work order as a markdown file in the pending directory.
      *
-     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string, screenshot?: string, console_errors?: array, network_failures?: array}  $data
+     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string, screenshot?: string, console_errors?: array, network_failures?: array, targeted_element?: array}  $data
      * @return string The generated filename.
      */
     public function store(array $data): string
@@ -367,6 +367,24 @@ class FloopManager
             $md .= "\n### Blade Views\n\n";
             foreach ($data['views'] as $view) {
                 $md .= "- `{$view}`\n";
+            }
+        }
+
+        if (! empty($data['targeted_element'])) {
+            $el = $data['targeted_element'];
+            $md .= "\n---\n\n## Targeted Element\n\n";
+            $md .= "| Property | Value |\n";
+            $md .= "|----------|-------|\n";
+            $md .= '| **Selector** | `'.$el['selector'].'` |'."\n";
+            if (! empty($el['tagName'])) {
+                $md .= '| **Tag** | `'.$el['tagName'].'` |'."\n";
+            }
+            if (! empty($el['textContent'])) {
+                $md .= '| **Text** | '.Str::limit($el['textContent'], 200).' |'."\n";
+            }
+            if (! empty($el['boundingBox'])) {
+                $box = $el['boundingBox'];
+                $md .= '| **Position** | '.$box['top'].', '.$box['left'].' ('.$box['width'].'×'.$box['height'].') |'."\n";
             }
         }
 
