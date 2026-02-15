@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 class FloopInstallSkillCommand extends Command
 {
-    protected $signature = 'floop:install-skill {--force : Overwrite existing SKILL.md}';
+    protected $signature = 'floop:install-skill {--force : Overwrite existing SKILL.md} {--choose : Choose targets instead of auto-detecting}';
 
     protected $description = 'Install the Floop SKILL.md into your project for AI coding agents';
 
@@ -20,10 +20,15 @@ class FloopInstallSkillCommand extends Command
     public function handle(): int
     {
         $source = dirname(__DIR__, 3).'/SKILL.md';
-        $detected = $this->detectTargets();
 
-        if (empty($detected)) {
+        if ($this->option('choose')) {
             $detected = $this->promptForTargets();
+        } else {
+            $detected = $this->detectTargets();
+
+            if (empty($detected)) {
+                $detected = $this->promptForTargets();
+            }
         }
 
         if (empty($detected)) {
@@ -58,7 +63,7 @@ class FloopInstallSkillCommand extends Command
         $labels = array_values($this->targets);
 
         $choices = $this->choice(
-            'No agent directory detected. Where should the skill be installed? (comma-separate for multiple)',
+            'Where should the skill be installed? (comma-separate for multiple)',
             $labels,
             0,
             null,
