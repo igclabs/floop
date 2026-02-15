@@ -2,8 +2,14 @@
 
 namespace IgcLabs\Floop;
 
+use IgcLabs\Floop\Events\FeedbackActioned;
+use IgcLabs\Floop\Events\FeedbackStored;
 use Illuminate\Support\Str;
 
+/**
+ * Handles all work order I/O: storing, listing, actioning, and deleting
+ * feedback markdown files on the filesystem.
+ */
 class FloopManager
 {
     protected string $storagePath;
@@ -47,11 +53,17 @@ class FloopManager
         $this->ensureDirectories();
     }
 
+    /**
+     * Check whether the widget is currently enabled.
+     */
     public function isEnabled(): bool
     {
         return ! file_exists($this->storagePath.'/.disabled');
     }
 
+    /**
+     * Enable the widget by removing the .disabled flag file.
+     */
     public function enable(): void
     {
         $flag = $this->storagePath.'/.disabled';
@@ -60,6 +72,9 @@ class FloopManager
         }
     }
 
+    /**
+     * Disable the widget by writing a .disabled flag file.
+     */
     public function disable(): void
     {
         $this->ensureDirectories();
@@ -81,6 +96,12 @@ class FloopManager
         return basename($filename);
     }
 
+    /**
+     * Store a new work order as a markdown file in the pending directory.
+     *
+     * @param  array{message: string, type?: string, priority?: string, url?: string, route_name?: string, route_action?: string, route_params?: array, query_params?: array, views?: string[], viewport?: string, user?: string, user_agent?: string}  $data
+     * @return string The generated filename.
+     */
     public function store(array $data): string
     {
         $timestamp = now();
@@ -91,9 +112,14 @@ class FloopManager
 
         file_put_contents($this->pendingPath.'/'.$filename, $markdown);
 
+        event(new FeedbackStored($filename, $data['type'], $data['message']));
+
         return $filename;
     }
 
+    /**
+     * Move a work order from pending to actioned and update its status line.
+     */
     public function markActioned(string $filename): bool
     {
         $filename = $this->sanitiseFilename($filename);
@@ -115,9 +141,14 @@ class FloopManager
         file_put_contents($dest, $content);
         unlink($source);
 
+        event(new FeedbackActioned($filename));
+
         return true;
     }
 
+    /**
+     * Move a work order from actioned back to pending (reopen).
+     */
     public function markPending(string $filename): bool
     {
         $filename = $this->sanitiseFilename($filename);
@@ -141,6 +172,11 @@ class FloopManager
         return true;
     }
 
+    /**
+     * Permanently delete a work order file.
+     *
+     * @param  string  $status  Either 'pending' or 'actioned'.
+     */
     public function delete(string $filename, string $status): bool
     {
         $filename = $this->sanitiseFilename($filename);
@@ -154,6 +190,11 @@ class FloopManager
         return unlink($path);
     }
 
+    /**
+     * List all work orders grouped by status.
+     *
+     * @return array{pending: array, actioned: array}
+     */
     public function all(): array
     {
         return [
@@ -162,6 +203,11 @@ class FloopManager
         ];
     }
 
+    /**
+     * Get the count of pending and actioned work orders.
+     *
+     * @return array{pending: int, actioned: int}
+     */
     public function counts(): array
     {
         return [
@@ -227,7 +273,7 @@ class FloopManager
         return $items;
     }
 
-    protected function buildMarkdown(array $data, $timestamp): string
+    protected function buildMarkdown(array $data, \Illuminate\Support\Carbon $timestamp): string
     {
         $type = $data['type'] ?? 'feedback';
         $emoji = self::TYPE_EMOJIS[$type] ?? self::TYPE_EMOJIS['feedback'];
