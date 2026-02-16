@@ -8,12 +8,14 @@ An autonomous feedback loop for Laravel apps. Testers describe what they want. A
 
 ## The Loop
 
-1. **Tester notices something** while browsing the app and hits the floop button
-2. **Floop captures the intent + full page context** (URL, route, controller, Blade views, viewport) and writes a structured work order as a markdown file
-3. **Ask your AI agent** to "work through feedback" and it reads each work order, locates the exact code using the captured context, makes the change, and closes the loop
-4. **Tester verifies the fix** next time they browse past
+1. **You notice something** while browsing the app and hit the floop button
+2. **Floop captures the intent + full page context** (URL, route, controller, blade views, viewport etc) and writes a structured work order as a markdown file
+3. **Ask your AI agent** to "work through feedback" and it reads each file, locates the exact code using the captured context, makes the change, and closes the loop
+4. **You verify the fix** the next time you browse the screen
 
-The widget is the sensor. The markdown file is the signal. The AI agent is the actuator. The tester closes the loop.
+It's a feedback loop compressed into a single tool. In cybernetics, a system becomes self-correcting when it can sense errors and act on them. Floop gives your Laravel app that ability: the widget is the sensor, the markdown files are the signal, and your AI agent is the actuator. 
+
+Use Floop while your agent is busy working. Browse the app, queue up work orders, then process them in batches. ..or run it continuously in a dedicated terminal and watch as your app fixes itself while you browse.
 
 ## Installation
 
@@ -34,9 +36,9 @@ Now when you ask Claude Code to "work through feedback" or "process feedback", i
 ## How It Works
 
 - A floating button appears in the corner of every page
-- Users type what they want and hit Enter (or click "Floop It")
+- Users type what they want and hit Enter (or click)
 - Each submission generates a structured work order as a `.md` file in `storage/app/feedback/pending/`
-- The work order captures everything an agent needs: the exact controller method, Blade view hierarchy, route parameters, viewport size, and the user's message
+- The work order captures everything an agent needs: the controller method, Blade view hierarchy, route info, viewport, and the message
 - A "floop" sound confirms the submission
 
 When the agent processes a work order, it moves from `pending/` to `actioned/`. The loop is closed.
@@ -46,14 +48,6 @@ storage/app/feedback/
 ├── pending/      ← open work orders
 └── actioned/     ← closed loops
 ```
-
-### Tip
-
-Use Floop while your agent is busy working. Browse the app, queue up work orders, then process them in batches. Or run it continuously in a dedicated terminal and watch as your app fixes itself while you browse.
-
-## Why "Floop"?
-
-A floop is a feedback loop compressed into a single tool. In cybernetics, a system becomes self-correcting when it can sense errors and act on them. Floop gives your Laravel app that ability: the widget is the sensor, the markdown file is the signal, and the AI agent is the actuator. The tester closes the loop by verifying the fix.
 
 ## CLI Commands
 
