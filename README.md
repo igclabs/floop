@@ -39,6 +39,9 @@ Now when you ask Claude Code to "work through feedback" or "process feedback", i
 - Users type what they want and hit Enter (or click)
 - Each submission generates a structured work order as a `.md` file in `storage/app/feedback/pending/`
 - The work order captures everything an agent needs: the controller method, Blade view hierarchy, route info, viewport, and the message
+- Click any element on the page to attach its CSS selector, tag, and text to the work order
+- Capture a screenshot of the current page state with one click
+- Console errors and failed network requests are automatically monitored and can be attached to any submission
 - A "floop" sound confirms the submission
 
 When the agent processes a work order, it moves from `pending/` to `actioned/`. The loop is closed.
@@ -48,6 +51,72 @@ storage/app/feedback/
 ├── pending/      ← open work orders
 └── actioned/     ← closed loops
 ```
+
+## What It Captures
+
+Every work order includes the tester's message plus everything an agent needs to find and fix the code:
+
+- **Page context** — URL, route name, controller method, HTTP method, viewport size, authenticated user
+- **Blade views** — every view and partial rendered on the page, not just the main one
+- **Targeted element** — click any element to capture its CSS selector, tag name, and text content
+- **Screenshot** — one-click page capture, saved as a companion PNG alongside the work order
+- **Console errors** — automatically monitored; attach up to 5 deduplicated errors to a submission
+- **Network failures** — failed HTTP requests (status 400+) captured automatically with method, URL, and status code
+
+Here's what a work order looks like:
+
+````markdown
+# 💬 Feedback: The submit button is too small on mobile
+
+**Status:** 🟡 Pending
+**Created:** 2026-02-16 14:30:00
+**Type:** Feedback
+**Priority:** 🔴 High
+
+---
+
+## Message
+
+The submit button is too small on mobile. I can barely tap it.
+
+---
+
+## Page Context
+
+| Property | Value |
+|----------|-------|
+| **URL** | `https://myapp.test/orders` |
+| **Route** | `orders.index` |
+| **Controller** | `App\Http\Controllers\OrderController@index` |
+| **Method** | `GET` |
+| **View** | `orders.index` |
+| **User** | Joe (joe@example.com) |
+| **Viewport** | 375x812 |
+
+### Blade Views
+
+- `layouts.app`
+- `orders.index`
+- `partials.header`
+- `components.order-table`
+
+---
+
+## Targeted Element
+
+| Property | Value |
+|----------|-------|
+| **Selector** | `#order-form > div.actions > button.btn-submit` |
+| **Tag** | `BUTTON` |
+| **Text** | Submit Order |
+| **Position** | 340, 520 (240×36) |
+
+---
+
+## Screenshot
+
+![Screenshot](2026-02-16_143000_the-submit-button-is-too-small.png)
+````
 
 ## CLI Commands
 
@@ -59,7 +128,7 @@ php artisan floop:list --type=bug
 
 # Close the loop / reopen
 php artisan floop:action filename.md
-php artisan floop:action filename.md --note="What you changed"
+php artisan floop:action filename.md --note="What you changed"  # appends an "Agent Notes" section to the work order
 php artisan floop:action filename.md --reopen
 
 # Install agent skill
@@ -129,12 +198,13 @@ By default, Floop auto-injects the widget before `</body>` on every HTML respons
 - Dark mode: respects `prefers-color-scheme: dark` and `data-bs-theme="dark"`
 - All styles scoped under `#floop-widget` to avoid conflicts
 - Submit sound synthesized via Web Audio API (no audio files)
+- Dispatches `FeedbackStored` and `FeedbackActioned` events so you can hook in notifications, webhooks, or custom integrations
 
 ## Roadmap
 
-- **React & Vue support** — first-class components for React and Vue so the widget integrates natively into SPA and Inertia apps instead of relying on Blade injection
-- **Storage interface & drivers** — a pluggable storage layer so work orders can live in a database, S3, or any custom driver instead of only the local filesystem
-- **Team testing tools** — better support for multi-tester workflows: assignments, labels, filtering, and visibility controls so teams can triage and track feedback together
+- **React & Vue support** : first-class components for React and Vue so the widget integrates natively into SPA and Inertia apps instead of relying on Blade injection
+- **Storage interface & drivers** : a pluggable storage layer so work orders can live in a database, S3, or any custom driver instead of only the local filesystem
+- **Team testing tools** : better support for multi-tester workflows: assignments, labels, filtering, and visibility controls so teams can triage and track feedback together
 
 ## License
 

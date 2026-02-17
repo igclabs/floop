@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 class FloopActionCommand extends Command
 {
     protected $signature = 'floop:action
-        {filename : The feedback filename to action}
+        {filename? : The feedback filename to action}
         {--reopen : Reopen an actioned item (move back to pending)}
         {--note= : A note describing what was done}';
 
@@ -16,8 +16,12 @@ class FloopActionCommand extends Command
 
     public function handle(FloopManager $manager): int
     {
-        $filename = $this->argument('filename');
         $reopen = $this->option('reopen');
+        $filename = $this->argument('filename') ?? $this->promptForFilename($manager, $reopen);
+
+        if ($filename === null) {
+            return self::SUCCESS;
+        }
 
         if ($reopen) {
             $result = $manager->markPending($filename);
@@ -41,5 +45,34 @@ class FloopActionCommand extends Command
         $this->error("Could not action: {$filename} (not found in pending/)");
 
         return self::FAILURE;
+    }
+
+    protected function promptForFilename(FloopManager $manager, bool $reopen): ?string
+    {
+        $all = $manager->all();
+        $items = $reopen ? $all['actioned'] : $all['pending'];
+
+        if (empty($items)) {
+            $status = $reopen ? 'actioned' : 'pending';
+            $this->info("No {$status} work orders found.");
+
+            return null;
+        }
+
+        $labels = [];
+        $filenames = [];
+        foreach ($items as $item) {
+            $labels[] = $item['title'].' ('.$item['created'].')';
+            $filenames[] = $item['filename'];
+        }
+
+        $selected = $this->choice(
+            $reopen ? 'Which work order do you want to reopen?' : 'Which work order do you want to action?',
+            $labels
+        );
+
+        $index = array_search($selected, $labels);
+
+        return $filenames[$index];
     }
 }
