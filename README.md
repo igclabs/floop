@@ -20,10 +20,10 @@ Use Floop while your agent is busy working. Browse the app, queue up work orders
 ## Installation
 
 ```bash
-composer require igclabs/floop:@dev
+composer require --dev igclabs/floop:@dev
 ```
 
-That's it. The service provider is auto-discovered, the middleware registers itself, and the widget is automatically injected into every HTML response. Browse any page and you'll see the floop button.
+Floop is a development tool — install it as a dev dependency so it's never deployed to production. The service provider is auto-discovered, the middleware registers itself, and the widget is automatically injected into every HTML response. Browse any page and you'll see the floop button.
 
 **Install the agent skill:**
 

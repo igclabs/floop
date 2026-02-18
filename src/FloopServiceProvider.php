@@ -36,13 +36,6 @@ class FloopServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-        $kernel->pushMiddleware(\IgcLabs\Floop\Http\Middleware\InjectFloopContext::class);
-
-        $this->loadRoutesFrom(__DIR__.'/../routes/floop.php');
-
-        $this->loadViewsFrom(__DIR__.'/Views', 'floop');
-
         $this->publishes([
             __DIR__.'/../config/floop.php' => config_path('floop.php'),
         ], 'floop-config');
@@ -50,10 +43,6 @@ class FloopServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../SKILL.md' => base_path('.claude/skills/floop/SKILL.md'),
         ], 'floop-skill');
-
-        Blade::directive('floop', function () {
-            return "<?php echo view('floop::widget')->render(); ?>";
-        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -65,5 +54,23 @@ class FloopServiceProvider extends ServiceProvider
                 FloopInstallSkillCommand::class,
             ]);
         }
+
+        /** @var array<int, string> $allowed */
+        $allowed = config('floop.environments', ['local']);
+
+        if (! in_array('*', $allowed) && ! $this->app->environment($allowed)) {
+            return;
+        }
+
+        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+        $kernel->pushMiddleware(\IgcLabs\Floop\Http\Middleware\InjectFloopContext::class);
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/floop.php');
+
+        $this->loadViewsFrom(__DIR__.'/Views', 'floop');
+
+        Blade::directive('floop', function () {
+            return "<?php echo view('floop::widget')->render(); ?>";
+        });
     }
 }

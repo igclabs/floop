@@ -1,5 +1,5 @@
 @php
-    $environments = config('floop.environments', ['local', 'staging', 'testing']);
+    $environments = config('floop.environments', ['local']);
     $shouldRender = in_array('*', $environments) || app()->environment($environments);
     $shouldRender = $shouldRender && app(\IgcLabs\Floop\FloopManager::class)->isEnabled();
 @endphp
