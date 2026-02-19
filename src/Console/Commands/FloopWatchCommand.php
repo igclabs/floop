@@ -111,7 +111,7 @@ class FloopWatchCommand extends Command
             }
         }
 
-        $this->error("Failed after ".($maxRetries + 1)." attempts — skipping: {$filename}");
+        $this->error('Failed after '.($maxRetries + 1)." attempts — skipping: {$filename}");
     }
 
     protected function runClaude(string $prompt, int $timeout): bool
