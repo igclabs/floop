@@ -81,6 +81,29 @@ class FloopManager
         file_put_contents($this->storagePath.'/.disabled', 'Disabled at '.now()->toDateTimeString()."\n");
     }
 
+    /**
+     * Get the absolute path to the pending work orders directory.
+     */
+    public function getPendingPath(): string
+    {
+        return $this->pendingPath;
+    }
+
+    /**
+     * Read the content of a single pending work order.
+     */
+    public function readPending(string $filename): ?string
+    {
+        $filename = $this->sanitiseFilename($filename);
+        $path = $this->pendingPath.'/'.$filename;
+
+        if (! file_exists($path)) {
+            return null;
+        }
+
+        return file_get_contents($path);
+    }
+
     protected function ensureDirectories(): void
     {
         if (! is_dir($this->pendingPath)) {

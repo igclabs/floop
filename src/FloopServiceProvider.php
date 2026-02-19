@@ -8,6 +8,7 @@ use IgcLabs\Floop\Console\Commands\FloopDisableCommand;
 use IgcLabs\Floop\Console\Commands\FloopEnableCommand;
 use IgcLabs\Floop\Console\Commands\FloopInstallSkillCommand;
 use IgcLabs\Floop\Console\Commands\FloopListCommand;
+use IgcLabs\Floop\Console\Commands\FloopWatchCommand;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
@@ -52,6 +53,7 @@ class FloopServiceProvider extends ServiceProvider
                 FloopEnableCommand::class,
                 FloopDisableCommand::class,
                 FloopInstallSkillCommand::class,
+                FloopWatchCommand::class,
             ]);
         }
 

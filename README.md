@@ -141,10 +141,29 @@ php artisan floop:clear              # clear pending
 php artisan floop:clear --actioned   # clear actioned
 php artisan floop:clear --all        # clear everything
 
+# Watch for work orders and process them autonomously
+php artisan floop:watch
+php artisan floop:watch --once              # process current pending items then exit
+php artisan floop:watch --interval=10       # poll every 10 seconds (default: 5)
+php artisan floop:watch --timeout=120       # max 120s per work order (default: 300)
+php artisan floop:watch --model=sonnet      # use a specific Claude model
+
 # Enable / disable the widget
 php artisan floop:enable
 php artisan floop:disable
 ```
+
+## Autonomous Mode
+
+Run Floop in a dedicated terminal and watch as your app fixes itself while you browse:
+
+```bash
+php artisan floop:watch
+```
+
+The watcher polls the pending directory for new work orders, dispatches each one to Claude Code (`claude -p`), and streams the output in real-time. When Claude finishes a work order, it runs `floop:action` to close the loop and moves on to the next one. Work orders are processed sequentially (oldest first) to avoid code conflicts.
+
+Use `--once` to process the current queue and exit — useful for CI or one-off batch runs. Configure defaults in `config/floop.php` under the `watch` key.
 
 ## Configuration
 
@@ -166,6 +185,10 @@ Key options in `config/floop.php`:
 | `shortcut` | `ctrl+shift+f` | Keyboard shortcut to toggle the feedback panel |
 | `hide_shortcut` | `ctrl+shift+h` | Keyboard shortcut to hide/show the entire widget |
 | `default_type` | `feedback` | Default feedback type |
+| `watch.interval` | `5` | Seconds between polling for new work orders |
+| `watch.timeout` | `300` | Max seconds per work order before timeout |
+| `watch.tools` | `Bash,Read,Edit,...` | Comma-separated Claude tools to allow |
+| `watch.model` | `null` | Claude model override (uses default if null) |
 
 ## Customisation
 

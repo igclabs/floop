@@ -32,4 +32,11 @@ return [
 
     'screenshot_max_size' => 5242880,
 
+    'watch' => [
+        'interval' => 5,
+        'timeout' => 300,
+        'tools' => 'Bash,Read,Edit,Write,Glob,Grep',
+        'model' => null,
+    ],
+
 ];
