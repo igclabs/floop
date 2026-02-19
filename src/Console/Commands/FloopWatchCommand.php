@@ -184,7 +184,7 @@ PROMPT;
 
     protected function claudeExists(): bool
     {
-        $process = Process::fromShellCommand('which claude');
+        $process = Process::fromShellCommandline('which claude');
         $process->run();
 
         return $process->isSuccessful();
