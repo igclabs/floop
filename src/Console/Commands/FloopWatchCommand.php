@@ -116,7 +116,7 @@ class FloopWatchCommand extends Command
 
     protected function runClaude(string $prompt, int $timeout): bool
     {
-        $command = ['claude', '-p', $prompt, '--verbose'];
+        $command = ['claude', '-p', $prompt, '--output-format', 'stream-json'];
 
         $tools = $this->option('tools') ?? config('floop.watch.tools', 'Bash,Read,Edit,Write,Glob,Grep');
         $command[] = '--allowedTools';
@@ -132,12 +132,28 @@ class FloopWatchCommand extends Command
         $process->setWorkingDirectory(base_path());
         $process->setTimeout($timeout);
 
+        $startTime = time();
+        $buffer = '';
+
         try {
             $process->start();
 
-            $process->wait(function ($type, $buffer) {
-                $this->getOutput()->write($buffer);
+            $process->wait(function ($type, $data) use ($startTime, &$buffer) {
+                $buffer .= $data;
+
+                // Process complete lines (NDJSON)
+                while (($newlinePos = strpos($buffer, "\n")) !== false) {
+                    $line = substr($buffer, 0, $newlinePos);
+                    $buffer = substr($buffer, $newlinePos + 1);
+
+                    $this->processStreamLine($line, $startTime);
+                }
             });
+
+            // Process any remaining buffer
+            if (trim($buffer) !== '') {
+                $this->processStreamLine($buffer, $startTime);
+            }
 
             return $process->isSuccessful();
         } catch (ProcessTimedOutException $e) {
@@ -146,6 +162,103 @@ class FloopWatchCommand extends Command
 
             return false;
         }
+    }
+
+    protected function processStreamLine(string $line, int $startTime): void
+    {
+        $line = trim($line);
+        if ($line === '') {
+            return;
+        }
+
+        $event = json_decode($line, true);
+        if (! is_array($event) || ! isset($event['type'])) {
+            return;
+        }
+
+        $elapsed = $this->formatElapsed(time() - $startTime);
+
+        match ($event['type']) {
+            'assistant' => $this->handleAssistantEvent($event, $elapsed),
+            'result' => $this->handleResultEvent($event, $elapsed),
+            default => null,
+        };
+    }
+
+    protected function handleAssistantEvent(array $event, string $elapsed): void
+    {
+        $content = $event['message']['content'] ?? [];
+
+        foreach ($content as $block) {
+            if (($block['type'] ?? '') !== 'tool_use') {
+                continue;
+            }
+
+            $tool = $block['name'] ?? '';
+            $input = $block['input'] ?? [];
+            $label = $this->describeToolUse($tool, $input);
+
+            if ($label !== null) {
+                $this->line("  <fg=gray>{$elapsed}</>  {$label}");
+            }
+        }
+    }
+
+    protected function handleResultEvent(array $event, string $elapsed): void
+    {
+        $cost = isset($event['cost_usd']) ? '$'.number_format($event['cost_usd'], 2) : null;
+        $turns = $event['num_turns'] ?? null;
+        $durationMs = $event['duration_ms'] ?? null;
+
+        $parts = [];
+        if ($durationMs !== null) {
+            $parts[] = $this->formatElapsed((int) round($durationMs / 1000));
+        }
+        if ($turns !== null) {
+            $parts[] = "{$turns} turns";
+        }
+        if ($cost !== null) {
+            $parts[] = $cost;
+        }
+
+        $summary = $parts ? ' ('.implode(', ', $parts).')' : '';
+        $this->line("  <fg=gray>{$elapsed}</>  \u{1F3C1} Done{$summary}");
+    }
+
+    protected function describeToolUse(string $tool, array $input): ?string
+    {
+        return match ($tool) {
+            'Read' => "\u{1F4C4} Read: ".$this->shortenPath($input['file_path'] ?? ''),
+            'Edit' => "\u{270F}\u{FE0F}  Edit: ".$this->shortenPath($input['file_path'] ?? ''),
+            'Write' => "\u{1F4DD} Write: ".$this->shortenPath($input['file_path'] ?? ''),
+            'Glob' => "\u{1F50D} Glob: ".($input['pattern'] ?? ''),
+            'Grep' => "\u{1F50E} Grep: ".($input['pattern'] ?? ''),
+            'Bash' => "\u{26A1} Run: ".$this->truncate($input['command'] ?? '', 60),
+            'Task' => "\u{1F916} Agent: ".$this->truncate($input['description'] ?? $input['prompt'] ?? '', 50),
+            default => null,
+        };
+    }
+
+    protected function shortenPath(string $path): string
+    {
+        $basePath = base_path().'/';
+        if (str_starts_with($path, $basePath)) {
+            return substr($path, strlen($basePath));
+        }
+
+        return $path;
+    }
+
+    protected function truncate(string $text, int $length): string
+    {
+        $text = str_replace("\n", ' ', $text);
+
+        return strlen($text) > $length ? substr($text, 0, $length).'...' : $text;
+    }
+
+    protected function formatElapsed(int $seconds): string
+    {
+        return sprintf('%d:%02d', intdiv($seconds, 60), $seconds % 60);
     }
 
     protected function buildPrompt(string $filename, string $content): string
