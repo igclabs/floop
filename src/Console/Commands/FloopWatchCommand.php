@@ -116,7 +116,7 @@ class FloopWatchCommand extends Command
 
     protected function runClaude(string $prompt, int $timeout): bool
     {
-        $command = ['claude', '-p', $prompt, '--output-format', 'stream-json'];
+        $command = ['claude', '-p', $prompt, '--verbose', '--output-format', 'stream-json'];
 
         $tools = $this->option('tools') ?? config('floop.watch.tools', 'Bash,Read,Edit,Write,Glob,Grep');
         $command[] = '--allowedTools';
