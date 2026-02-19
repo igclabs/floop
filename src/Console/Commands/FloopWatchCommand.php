@@ -139,6 +139,12 @@ class FloopWatchCommand extends Command
             $process->start();
 
             $process->wait(function ($type, $data) use ($startTime, &$buffer) {
+                if ($type === Process::ERR) {
+                    $this->getOutput()->write("<fg=red>{$data}</>");
+
+                    return;
+                }
+
                 $buffer .= $data;
 
                 // Process complete lines (NDJSON)
@@ -153,6 +159,10 @@ class FloopWatchCommand extends Command
             // Process any remaining buffer
             if (trim($buffer) !== '') {
                 $this->processStreamLine($buffer, $startTime);
+            }
+
+            if (! $process->isSuccessful()) {
+                $this->warn('Exit code: '.$process->getExitCode());
             }
 
             return $process->isSuccessful();
