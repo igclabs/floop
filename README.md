@@ -6,6 +6,8 @@ An autonomous feedback loop for Laravel apps. Testers describe what they want. A
 
 **Feedback in. Fixes out. That's the floop.**
 
+[Full Documentation](https://www.intelligentgraphicandcode.com/resources/floop)
+
 ## The Loop
 
 1. **You notice something** while browsing the app and hit the floop button
@@ -229,6 +231,10 @@ By default, Floop auto-injects the widget before `</body>` on every HTML respons
 - **Storage interface & drivers** : a pluggable storage layer so work orders can live in a database, S3, or any custom driver instead of only the local filesystem
 - **Team testing tools** : better support for multi-tester workflows: assignments, labels, filtering, and visibility controls so teams can triage and track feedback together
 
+## Made by
+
+Floop is built and maintained by [Intelligent Graphic & Code](https://www.intelligentgraphicandcode.com/), a development studio in the UK.
+
 ## License
 
-MIT - IGC Enterprises Ltd
+MIT 
